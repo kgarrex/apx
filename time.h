@@ -109,6 +109,8 @@ enum apx_timestamp {
 /* the number of 100-nanosecond intervals since January 1, 1601 */
 	apx_timestamp_winnt,
 
+/* the uuid v1 timesstamp */
+	apx_timestamp_uuid_v1,
 
 	apx_timestamp_max
 };
