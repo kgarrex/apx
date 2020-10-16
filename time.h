@@ -20,14 +20,17 @@
 #include <windows.h>
 
 typedef unsigned long long apx_uint64;
-typedef unsigned short apx_uint16;
+typedef unsigned int       apx_uint32;
+typedef unsigned short     apx_uint16;
+
+typedef apx_uint64 apx_time64;
 
 
 typedef struct {
 	apx_uint16 ver   :  2;
 	apx_uint16 cal   :  7;
 	apx_uint16 tz    :  7;
-	apx_uint16 nano  : 10; //nano-seconds in a microsecond
+	apx_uint16 nano  : 10; // nano-seconds in a microsecond
 	apx_uint16 sec   :  6;
 	apx_uint16 us    : 10; // number of microseconds in a second
 	apx_uint16 min   :  6;
@@ -41,13 +44,34 @@ typedef struct {
 	apx_uint16 pad1  :  2;
 	apx_uint16 pad2;
 	apx_uint16 pad3;
-} apx_datetime;
+} *apx_datetime;
 
+struct apx_calendar_day_s {
+	char month;
+	char day;
+};
+
+/*
+struct apx_calendar_year_s {
+};
+*/
+
+struct apx_date_s {
+	short year;
+	char month;
+	char day;
+};
+
+struct apx_calendar_month_s {
+	struct apx_date_s date[7][5];
+};
+
+void apx_get_calendar_month(int year, int month, struct apx_calendar_month_s *data);
 
 typedef unsigned long long apx_unix_time;
 
 typedef union {
-	apx_uint64 *time;
+	apx_uint64 time;
 } apx_timestamp;
 
 
@@ -64,10 +88,10 @@ int unixtime_to_systime_ms(__time64_t timestamp, void *systime);
 BOOL systime_to_unixtime_ms(SYSTEMTIME *systime, __time64_t *timestamp);
 
 /* return: the current utc time */
-void apx_now(_out_ apx_datetime *adt);
+apx_datetime apx_utc_now();
 
 /* return: the current local time */
-void apx_local_now(_out_ apx_datetime *adt);
+apx_datetime apx_local_now();
 
 //time precision:
 //a 'shake' is 10 nanoseconds
@@ -90,21 +114,14 @@ enum apx_timestamp {
 };
 
 
-enum apx_format {
-	apx_format_undefined,
-
 /* the iso 8601 / rfc 3339 date format */
-	apx_format_iso_8601,
+#define APX_FORMAT_ISO_8601 "%Y-%m-%dT%H:%i%s%U"
 
 /* the format used for http cookie dates */
-	apx_format_http_cookie,
+#define APX_FORMAT_HTTP_COOKIE "%D, %d %M %Y %H:%i:%s GMT"
 
 /* the rfc 822 */
-	apx_format_rfc_822,
-
-
-	apx_format_max
-};
+#define APX_FORMAT_RFC_822
 
 
 //returns the size of the string copied to buf
@@ -131,28 +148,25 @@ enum apx_format {
  * write a date string out to a buffer from a datetime object
  *
 */
-int apx_format_write( _in_ apx_datetime *adt,
+int apx_format_write( _in_ apx_datetime adt,
 	_in_ const char *format,
 	_out_ void *buf, _in_ unsigned bufsz);
 
 /*
  * read a date string into a datetime object
 */
-int apx_format_read( _out_ apx_datetime *adt,
-	_in_ const char *format,
+apx_datetime apx_format_read( _in_ const char *format,
 	_in_ const char *date, _in_ int length);
 
 /*
  * write a datetime object out to an pre-defined timestamp
  */
-int apx_timestamp_write(_in_ apx_datetime *adt,
-	_in_ enum apx_timestamp type, _out_ apx_timestamp *time);
+apx_uint64 apx_timestamp_out(_in_ apx_datetime adt, _in_ enum apx_timestamp type);
 
 /* 
  * read a pre-defined timestamp into a datetime object
  */
-int apx_timestamp_read(_out_ apx_datetime *adt,
-	_in_ enum apx_timestamp type, _in_ apx_timestamp time);
+apx_datetime apx_timestamp_in( _in_ enum apx_timestamp type, _in_ apx_uint64 time);
 
 
 int apx_add_hour( _in_ apx_datetime *adt, int hour);
@@ -226,13 +240,13 @@ enum Timezone {
 };
 
 enum DayOfWeek{
-	Sunday,
 	Monday,
 	Tuesday,
 	Wednesday,
 	Thursday,
 	Friday,
-	Saturday
+	Saturday,
+	Sunday
 };
 
 enum Month {

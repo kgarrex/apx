@@ -35,6 +35,7 @@ RtlQueryTimeZoneInformation(
 */
 
 
+#if defined(_WIN32)
 struct {
 NTSTATUS (__stdcall *ZwQuerySystemTime)(PLARGE_INTEGER);
 NTSTATUS (__stdcall *RtlQueryTimeZoneInformation)(PRTL_TIME_ZONE_INFORMATION);
@@ -42,9 +43,10 @@ VOID (__stdcall *RtlTimeToTimeFields)(PLARGE_INTEGER, PTIME_FIELDS);
 VOID (__stdcall *RtlTimeFieldsToTime)(PTIME_FIELDS, PLARGE_INTEGER);
 NTSTATUS (__stdcall *RtlSystemTimeToLocalTime)(const LARGE_INTEGER *, PLARGE_INTEGER); 
 } ntdll;
+#endif
 
 
-void time_init()
+void apx_init()
 {
 #if defined(_WIN32)
 	HMODULE hmod;
@@ -89,7 +91,7 @@ void time_init()
 
 }
 
-void time_term()
+void apx_term()
 {
 	//FreeLibrary(
 }
@@ -101,8 +103,6 @@ void print_date(PTIME_FIELDS time){
 	);
 	printf("\n");
 }
-
-
 
 #if defined(_WIN32)
 int is_daylight_time(PRTL_TIME_ZONE_INFORMATION tz, PTIME_FIELDS date)
@@ -133,24 +133,27 @@ int is_daylight_time(PRTL_TIME_ZONE_INFORMATION tz, PTIME_FIELDS date)
 	}
 
 	if(daystart->Month > stdstart->Month){
-		if(date->Month > daystart->Month || date->Month < stdstart->Month) return 1;
+		if(date->Month > daystart->Month ||
+		date->Month < stdstart->Month)
+			return 1;
 	}
 	else {
-		if(date->Month > daystart->Month && date->Month < stdstart->Month) return 1;
+		if(date->Month > daystart->Month &&
+		date->Month < stdstart->Month)
+			return 1;
 	
 	}
 	return 0;
 }
 #endif
 
-int get_tz_offset(void *local_ptr)
+
+#if defined(_WIN32)
+int get_tz_offset(TIME_FIELDS *tf)
 {
 	int tz_offset;
 
-#if defined(_WIN32)
 	NTSTATUS nterr;
-	PLARGE_INTEGER timestamp = local_ptr;
-	TIME_FIELDS time_fields;
 	RTL_TIME_ZONE_INFORMATION tzinfo;
 
 	nterr = ntdll.RtlQueryTimeZoneInformation(&tzinfo);
@@ -158,93 +161,82 @@ int get_tz_offset(void *local_ptr)
 		printf("Error: %u\n", nterr);
 		return 0;
 	}
-	ntdll.RtlTimeToTimeFields(timestamp, &time_fields);
 
-	if(is_daylight_time(&tzinfo, &time_fields)){
+	if(is_daylight_time(&tzinfo, tf)){
 		tz_offset = 0 - (tzinfo.Bias + tzinfo.DaylightBias);
 	}
 	else {
 		tz_offset = 0 - (tzinfo.Bias + tzinfo.StandardBias);
 	}
-#endif
 
 	return tz_offset;
 }
+#endif
 
-LARGE_INTEGER win32_now()
+	
+
+void local_now(apx_datetime dt)
 {
+#if defined(_WIN32)
 	NTSTATUS err;
-	LARGE_INTEGER utc = {0};
+	TIME_FIELDS tf;
+	LARGE_INTEGER utc, local; 
+
 	err = ntdll.ZwQuerySystemTime(&utc);
 	if(err){
 		printf("Error: %u\n", err);
-	}
-	return utc;
-}
-
-LARGE_INTEGER win32_now_local()
-{
-	NTSTATUS err;
-	LARGE_INTEGER utc, local = {0};
-	err = ntdll.ZwQuerySystemTime(&utc);
-	if(err){
-		printf("Error: %u\n", err);
-		return local;
 	}
 
 	err = ntdll.RtlSystemTimeToLocalTime(&utc, &local);
 	if(err){
 		printf("Error: %u\n", err);
-		return local;
 	}
-	return local;
+
+	ntdll.RtlTimeToTimeFields(&local, &tf);
+
+	dt->nano = 0;
+	dt->us = 0;
+	dt->ms = tf.Milliseconds;
+	dt->sec = tf.Second;
+	dt->min = tf.Minute;
+	dt->hour = tf.Hour;
+	dt->day = tf.Day;
+	dt->year = tf.Year;
+	dt->dow = tf.Weekday;
+	dt->month = tf.Month;
+	dt->tz = get_tz_offset(&tf);
+
+#endif
 }
 
-void win32_time_fields(LARGE_INTEGER *time, apx_datetime *f)
+
+void utc_now(apx_datetime dt)
 {
+#if defined(_WIN32)
+	NTSTATUS err;
 	TIME_FIELDS tf;
-	ntdll.RtlTimeToTimeFields(time, &tf);
+	LARGE_INTEGER utc = {0};
 
-	f->ms = tf.Milliseconds;
-	f->sec = tf.Second;
-	f->min = tf.Minute;
-	f->hour = tf.Hour;
-	f->day = tf.Day;
-	f->year = tf.Year;
-	f->dow = tf.Weekday;
-	f->month = tf.Month;
-	f->tz = get_tz_offset(time);
-}
+	err = ntdll.ZwQuerySystemTime(&utc);
+	if(err){
+		printf("Error: %u\n", err);
+	}
 
-void local_now(apx_datetime *adt)
-{
-	datetime_t dt;
-	struct datetime_fields f;
+	ntdll.RtlTimeToTimeFields(&utc, &tf);
 
-#if defined(_WIN32)
-	LARGE_INTEGER local;
-	local = win32_now_local();
-	win32_time_fields(&local, &f);
+	dt->nano = 0;
+	dt->us = 0;
+	dt->ms = tf.Milliseconds;
+	dt->sec = tf.Second;
+	dt->min = tf.Minute;
+	dt->hour = tf.Hour;
+	dt->day = tf.Day;
+	dt->year = tf.Year;
+	dt->dow = tf.Weekday;
+	dt->month = tf.Month;
+	dt->tz = get_tz_offset(&tf);
+
 #endif
-
-	dt = fields_to_datetime(f);
-	return dt;
-}
-
-
-void now(apx_datetime *adt)
-{
-	datetime_t dt;
-	struct datetime_fields f;
-
-#if defined(_WIN32)
-	LARGE_INTEGER utc;
-	utc = win32_now();
-	win32_time_fields(&utc, &f);
-#endif
-	
-	dt = fields_to_datetime(f);
-	return dt;
 }
 
 

@@ -1,14 +1,14 @@
 
-static int w_0(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_1(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_2(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_3(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_4(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_5(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_6(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_7(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_8(struct datetime_fields *f, char buf[]){ return 0; }
-static int w_9(struct datetime_fields *f, char buf[]){ return 0; }
+static int w_0(void *f, char buf[]){ return 0; }
+static int w_1(void *f, char buf[]){ return 0; }
+static int w_2(void *f, char buf[]){ return 0; }
+static int w_3(void *f, char buf[]){ return 0; }
+static int w_4(void *f, char buf[]){ return 0; }
+static int w_5(void *f, char buf[]){ return 0; }
+static int w_6(void *f, char buf[]){ return 0; }
+static int w_7(void *f, char buf[]){ return 0; }
+static int w_8(void *f, char buf[]){ return 0; }
+static int w_9(void *f, char buf[]){ return 0; }
 
 static int w_A(void *f, void *b){return 0;}
 static int w_B(void *f, void *b){return 0;}
@@ -17,7 +17,7 @@ static int w_C(void *f, void *b){return 0;}
 // The three letter day of the week
 static int w_D(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	char *ptr = buf;
 	const char *ptr2 = dow[f->dow].text;
 	*ptr++ = *ptr2++;
@@ -31,7 +31,7 @@ static int w_E(void *f, void *b){return 0;}
 // The full textual representation of a month
 static int w_F(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	char *ptr = buf;
 	const char length = month[f->month].length;
 	const char *text = month[f->month].text;
@@ -50,7 +50,7 @@ static int w_G(void *f, void *b){return 0;}
 // The 24 hour format of an hour (00 - 23)
 static int w_H(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	itoa_zt(f->hour, buf, 2, 10);
 	return 2;
 }
@@ -63,7 +63,7 @@ static int w_L(void *f, void *b){return 0;}
 // The three letter month abbr 
 static int w_M(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	char *ptr = buf;
 	const char *ptr2 = month[f->month].text;
 	*ptr++ = *ptr2++;
@@ -83,7 +83,7 @@ static int w_T(void *f, void *b){return 0;}
 // The formatted utc offset in hours and minutes (-00:00)
 static int w_U(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	int hour, min;
 	int n;
 	char *ptr = buf;
@@ -119,7 +119,7 @@ static int w_X(void *f, void *b){return 0;}
 // The four-digit representation of a year
 static int w_Y(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	int n;
 	itoa_zt(f->year+1582, buf, 0, 10);
 	return 4;
@@ -133,7 +133,7 @@ static int w_c(void *f, void *b){return 0;}
 // The two-digit day of the month (01 - 31)
 static int w_d(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	//char *ptr = buf;
 	itoa_zt(f->day, buf, 2, 10);
 	return 2; 
@@ -152,7 +152,7 @@ static int w_h(token_t *tok, char buf[])
 // The 2 digit minute with leading zeroes
 static int w_i(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	itoa_zt(f->min, buf, 2, 10);
 	return 2;
 }
@@ -163,7 +163,7 @@ static int w_k(void *f, void *b){return 0;}
 // The full textual representation of a weekday
 static int w_l(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	char *ptr = buf;
 	const char length = dow[f->dow].length;
 	const char *text = dow[f->dow].text;
@@ -180,7 +180,7 @@ static int w_l(token_t *tok, char buf[])
 // The two digit numeric month
 static int w_m(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	int n;
 	itoa_zt(f->month+1, buf, 2, 10);
 	return 2;
@@ -195,7 +195,7 @@ static int w_r(void *f, void *b){return 0;}
 // The 2 digit second with leading zeroes
 static int w_s(token_t *tok, char buf[])
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	itoa_zt(f->sec, buf, 2, 10);
 	return 2;
 }
@@ -229,7 +229,7 @@ static int r_G(void *f, void *b){return 0;}
 
 // Read the 2 digit hour
 static int r_H(token_t *tok, const char *str){
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	unsigned n;
 
 	n = atouint(str, 2);
@@ -252,7 +252,7 @@ static int r_T(void *f, void *b){return 0;}
 
 //Read the iso8601 time zone
 static int r_U(token_t *tok, const char *str){
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	int n;
 	int tz;
 	char neg = 0;
@@ -294,7 +294,7 @@ static int r_X(void *f, void *b){return 0;}
 // Read the 4 digit year
 static int r_Y(token_t *tok, const char *str)
 {
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	unsigned n;
 	for(int i = 0; i < 4; i++){
 		if(str[i] < '0' || str[i] > '9') return 0;
@@ -313,7 +313,7 @@ static int r_c(void *f, void *b){return 0;}
 
 // Read the 2 digit day
 static int r_d(token_t *tok, const char *str){
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	unsigned n;
 
 	n = atouint(str, 2);
@@ -328,7 +328,7 @@ static int r_h(void *f, void *b){return 0;}
 
 // Read the 2 digit minute 
 static int r_i(token_t *tok, const char *str){
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	unsigned n;
 
 	n = atouint(str, 2);
@@ -343,7 +343,7 @@ static int r_l(void *f, void *b){return 0;}
 
 // Read the 2 digit month 
 static int r_m(token_t *tok, const char *str){
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	unsigned n;
 
 	//TODO str stopping early
@@ -362,7 +362,7 @@ static int r_r(void *f, void *b){return 0;}
 
 // Read the 2 digit second
 static int r_s(token_t *tok, const char *str){
-	struct datetime_fields *f = tok->user_data;
+	apx_datetime f = tok->user_data;
 	unsigned n;
 
 	n = atouint(str, 2);

@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include "time.h"
 
 #define MAX_MILLISECONDS 0x3e7
@@ -41,6 +42,11 @@ inline int is_leap_year(int y)
 	return y % 4 != 0 ? 0 : (y % 100 != 0 ? 1 : (y % 400 == 0 ? 1 : 0));
 }
 */
+
+
+apx_datetime alloc_datetime();
+void free_datetime(apx_datetime dt);
+
 
 typedef union {
 #if defined(_WIN32)
@@ -134,13 +140,13 @@ int nn, i = 0;
 struct text_s {const char *text; const char length; };
 
 const struct text_s dow[] = {
-	{"Sunday",   6},
 	{"Monday",   6},
 	{"Tuesday",  7},
 	{"Wednesday",9},
 	{"Thursday", 8},
 	{"Friday",   6},
-	{"Saturday", 8}
+	{"Saturday", 8},
+	{"Sunday",   6}
 };
 
 const struct text_s month[] = {
@@ -374,104 +380,6 @@ typedef struct {
 	void *user_data;
 } token_t;
 
-
-/*
-void current_time(SYSTIME *systime)
-{
-	GetSystemTime(systime);
-}
-*/
-
-#define get_value(dt, mask, off) ((dt >> off) & mask)
-#define set_value(cal, val, mask, off) (dt |= (((unsigned long long)val & mask) << off))
-
-#define get_ms(dt)    get_value(dt, 0x3ff, 0)
-#define get_sec(dt)   get_value(dt, 0x3f, 10)
-#define get_min(dt)   get_value(dt, 0x3f, 16)
-#define get_day(dt)   get_value(dt, 0x1f, 22)
-#define get_hour(dt)  get_value(dt, 0x1f, 27)
-#define get_year(dt)  get_value(dt, 0x1fff, 32)
-#define get_dow(dt)   get_value(dt, 0x7, 45)
-#define get_month(dt) get_value(dt, 0xf, 48)
-#define get_tz(dt)    get_value(dt, 0x7f, 52)
-#define get_cal(dt)   get_value(dt, 0x7, 59)
-#define get_ver(dt)   get_value(dt, 0x3, 62)
-
-#define set_ms(dt, ms)       set_value(dt, ms, 0x3ff, 0)
-#define set_sec(dt, sec)     set_value(dt, sec, 0x3f, 10)
-#define set_min(dt, min)     set_value(dt, min, 0x3f, 16)
-#define set_day(dt, day)     set_value(dt, day, 0x1f, 22)
-#define set_hour(dt, hour)   set_value(dt, hour, 0x1f, 27)
-#define set_year(dt, year)   set_value(dt, year, 0x1fff, 32)
-#define set_dow(dt, dow)     set_value(dt, dow, 0x7, 45)
-#define set_month(dt, month) set_value(dt, month, 0xf, 48)
-#define set_tz(dt, tz)       set_value(dt, tz, 0x7f, 52)
-#define set_cal(dt, cal)     set_value(dt, cal, 0x7, 59)
-#define set_ver(dt, ver)     set_value(dt, ver, 0x3, 62)
-
-
-
-/*
-inline datetime_t fields_to_datetime(struct datetime_fields f)
-{
-	datetime_t dt = 0;
-	if((f.year < 1582) || (f.year > 9774)){
-		f.err = 1;
-	}
-	set_ms(dt,  f.ms);
-	set_sec(dt, f.sec);
-	set_min(dt, f.min);
-	set_day(dt, f.day);
-	set_hour(dt, f.hour);
-	f.year -= 1582; //1st year of gregorian calendar
-	set_year(dt, f.year);
-	set_dow(dt, f.dow);
-	f.month--; //for windows
-	set_month(dt, f.month);
-	set_tz( dt, abs((f.tz/15)-63) );
-	set_cal(dt, f.cal);
-	set_ver(dt, f.ver);
-
-	return dt;
-}
-
-
-inline struct datetime_fields datetime_to_fields(datetime_t dt)
-{
-	static short utc_offset[] = {
-	 945,  930,  915,  900,  885,  870,  855,  840,
-	 825,  810,  795,  780,  765,  750,  735,  720,
-	 705,  690,  675,  660,  645,  630,  615,  600,
-	 585,  570,  555,  540,  525,  510,  495,  480,
-	 465,  450,  435,  420,  405,  390,  375,  360,
-	 345,  330,  315,  300,  285,  270,  255,  240,
-	 225,  210,  195,  180,  165,  150,  135,  120,
-	 105,   90,   75,   60,   45,   30,   15,    0,
-	 -15,  -30,  -45,  -60,  -75,  -90, -105, -120,
-	-135, -150, -165, -180, -195, -210, -225, -240,
-	-255, -270, -285, -300, -315, -330, -345, -360,
-	-375, -390, -405, -420, -435, -450, -465, -480,
-	-495, -510, -525, -540, -555, -570, -585, -600,
-	-615, -630, -645, -660, -675, -690, -705, -720,
-	-735, -750, -765, -780, -795, -810, -825, -840,
-	-855, -870, -885, -900, -915, -930, -945, -960
-	};
-
-	struct datetime_fields f;
-	f.ms = get_ms(dt);
-	f.sec = get_sec(dt);
-	f.min = get_min(dt);
-	f.day = get_day(dt);
-	f.hour = get_hour(dt);
-	f.year = get_year(dt)+1582;
-	f.dow = get_dow(dt);
-	f.month = get_month(dt);
-	f.tz = utc_offset[get_tz(dt)];
-	f.cal = get_cal(dt);
-	f.ver = get_ver(dt);
-	return f;
-}
-*/
 
 #include "ostime.c"
 
@@ -753,11 +661,12 @@ inline int days_since_epoch(unsigned long long n)
 
 // return the day of the week from total days since epoch
 // days: total days since the Gregorian epoch
-inline char day_of_week(unsigned long long days)
+inline char weekday_from_days(int days)
 {
-	//Gregorian epoch starts on Friday
-	const char dow[] = {5, 6, 0, 1, 2, 3, 4};
-	return dow[days % 7];
+	/* Gregorian epoch starts on Friday */
+	const char table[] = {4, 5, 6, 0, 1, 2, 3};
+	return table[days % 7];
+
 }
 
 
@@ -807,35 +716,41 @@ inline int num_leap_days_from_days(register days)
 {
 	//register double d = (double)days;
 	if(days < 6347) return  days / 1461 ;
-	days -= 6347;
+	days -= 6346;
 	return ((days/146097)*97) + (((days%146097)/36524)*24) + ((days%36524)/1461) + 5;
-	//return ((d/146097.0)*97.0) + (((d%146097.0)/36524.25)*24.0) + ((d%36524.25)/1460.97) + 1.0;
-	//return (days/1461) - ((days/146097)*3) - ((days%146097)/36525) + 5;
 }
 
 // return: the number days that have PASSED since the Gregorian epoch (1582-10-15)
 // TODO MUST handle dates within the year 1582
 inline int num_epoch_days(register year, register month, register day)
 {
+	register int days;
+	short days_passed[] =  {
+	0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
+	};
+
+	if(year < 1583) ;
+
 	return 78 + ((year - 1583) * 365) +
-		num_leap_years_from_year(year) + num_year_days(year, month, day);
+		num_leap_years_from_year(year) +
+		days_passed[month] + (day-1) +
+		(is_leap_year(year) && month > 2 ? 1 : 0);
 }
 
-struct date_s {
-	char month;
-	char day;
-	short year;
-};
 
-inline struct date_s date_from_days(register int days)
+void apx_timestamp_to_datetime(apx_datetime dt, register apx_uint64 t)
 {
-	struct date_s date;
+	register apx_uint32 n;
+	register int leap_days;
+	register int leap_years;
+	int year;
 
 	struct {
 		short month : 4;
 		short day   : 5;	
 		short pad   : 7;
-	} date_table[] = {
+	}
+	date_table[] = {
 	{10,15}, {10,16}, {10,17}, {10,18}, {10,19}, {10,20}, /* 5 */
 	{10,21}, {10,22}, {10,23}, {10,24}, {10,25}, {10,26},
 	{10,27}, {10,28}, {10,29}, {10,30}, {10,31}, {11, 1},
@@ -899,91 +814,171 @@ inline struct date_s date_from_days(register int days)
 	{10, 9}, {10,10}, {10,11}, {10,12}, {10,13}, {10,14} /* 365 */
 	};
 
-	register int leap_days;
-	register int n, i;
 
-	leap_days = num_leap_days_from_days(days);
-
-	//n = ((days % 366) * n) % 366;
-	n = (days%365)-leap_days;
-	//printf("365: %u | %u\n", days%365, n < 0 ? 365-(-n) : n); //n < 0 ? 365-(-n) : n );
-	//printf("366: %u | %u\n", days%366, ((days%366) + ((days/365)-leap_days)) % 366 );
-	
-	//n = ((days % 366) + ((days/365)-leap_days)) % 366;
-	n = ((days%365)-leap_days) % 365;
-	n = n < 0 ? 365-(-n) : n;
-
-	/*
-	printf("N = %u\n", n);
-	i = (days % 365) - n;
-	//n = n + ((days % 365) - leap_days);
-	n = (n + i) - leap_days;
-	return n < 0 ? 366-(-n) : n;
-	*/
-
-	date.month = date_table[n].month;
-	date.day = date_table[n].day & 0x1f;
-	date.year = (days/365) + 1582;
-
-	return date;
-}
-
-void from_timestamp(apx_datetime *dt, register unsigned long long t)
-{
-	struct datetime_fields *f = dt;
-	register int n;
-	/*
 	union {
 		unsigned long long nanoseconds;	
 		unsigned long long microseconds;
 		unsigned long long milliseconds;
+		unsigned long long seconds;
+		unsigned long minutes;
+		unsigned long hours;
+		unsigned long day;
+		unsigned long month;
+		unsigned long year;
+	} timestamp;
 
-	} date;
-	*/
 
-	struct date_s date;
-
-	/* Gregorian epoch starts on Friday */
-	const char dow[] = {5, 6, 0, 1, 2, 3, 4};
-	//char dow[] = { 6, 0, 1, 2, 3, 4, 5 }; //windows epoch is on Monday
 	
 	// get the number of nanoseconds
-	f->nano = (t % 10) * 100;
+	dt->nano = (t % 10) * 100;
 	t /= 10; //num microseconds
 	
 	// get the number of microseconds
-	f->us = t % 1000; 
+	dt->us = t % 1000; 
 	t /= 1000; //num milliseconds 
 	
 	// get the number of milliseconds
-	f->ms = t % 1000;
+	dt->ms = t % 1000;
 	t /= 1000; //num seconds
 	
 	// get the number of seconds
-	f->sec = t % 60;
+	dt->sec = t % 60;
 	t /= 60; //num minutes
 	
 	// get the number of minutes
-	f->min = t % 60;
+	dt->min = t % 60;
 	t /= 60; //num hours
 
-	f->hour = t % 24;
+	dt->hour = t % 24;
 	t /= 24; //num days since epoch
 	
-	printf("days: %u\n", t);
-	f->dow = dow[t % 7];
+	dt->dow = weekday_from_days(t);
 
-	date = date_from_days(t);
+	dt->tz = 63; //utc
 
-	f->month = date.month;
-	f->day = date.day;
-	f->year = date.year;
-
-	printf("Year: %u | Month: %u | date: %u\n", f->year, f->month, f->day);
-
+	leap_days = num_leap_days_from_days(t);
+	year = ((t - leap_days) / 365) + 1582;
+	n = (t - leap_days) % 365;
+	if(n > 77) year++;
+	if(n > 135){
+		++n;
+		if(is_leap_year(year)){
+			leap_years = num_leap_years_from_year(year);
+			if(leap_days == leap_years) --n;
+		}
+	}
+	
+	dt->month = date_table[n].month;
+	dt->day   = date_table[n].day;
+	dt->year  = year;
 }
 
+apx_uint64 apx_datetime_to_timestamp(apx_datetime dt)
+{
+	register apx_uint64 t;
+	register int days;
+
+	static short utc_offset[] = {
+	 945,  930,  915,  900,  885,  870,  855,  840,
+	 825,  810,  795,  780,  765,  750,  735,  720,
+	 705,  690,  675,  660,  645,  630,  615,  600,
+	 585,  570,  555,  540,  525,  510,  495,  480,
+	 465,  450,  435,  420,  405,  390,  375,  360,
+	 345,  330,  315,  300,  285,  270,  255,  240,
+	 225,  210,  195,  180,  165,  150,  135,  120,
+	 105,   90,   75,   60,   45,   30,   15,    0,
+	 -15,  -30,  -45,  -60,  -75,  -90, -105, -120,
+	-135, -150, -165, -180, -195, -210, -225, -240,
+	-255, -270, -285, -300, -315, -330, -345, -360,
+	-375, -390, -405, -420, -435, -450, -465, -480,
+	-495, -510, -525, -540, -555, -570, -585, -600,
+	-615, -630, -645, -660, -675, -690, -705, -720,
+	-735, -750, -765, -780, -795, -810, -825, -840,
+	-855, -870, -885, -900, -915, -930, -945, -960
+	};
+
+	days = num_epoch_days(dt->year, dt->month, dt->day);
+	t = days * 1440;
+	t += dt->hour * 60;
+	t += dt->min;
+	t += utc_offset[dt->tz];
+	t *= 600000000;
+	t += dt->sec * 10000000;
+	t += dt->ms * 10000;
+	t += dt->us * 100;
+	t += dt->nano / 100;
+	return t;
+}
+
+struct apx_week_s {
+	short year;
+	char offset;
+};
+
+
+/* ISO-8601 defines the week starting on Monday
+** The first week of the year is the week that contains
+** that year's first Thursday (i.e. the first 4-day week)
+*/
+//TODO get year offset (7-dow) to how many days to calculate which year the date falls in
+struct apx_week_s apx_week_from_date(short year, char month, char day)
+{
+	struct apx_week_s week;
+	int days;
+	char dow;
+	int jan1;
+	int year_offset;
+
+	jan1 = num_epoch_days(year, 1, 1);
+	days = num_epoch_days(year, month, day);
+
+	dow = weekday_from_days(jan1);
+	year_offset = dow > 3 ? 7-dow : -dow; //-(7+(dow-7))
+
+	printf("year_offset: %d\n", year_offset);
+
+	if(year_offset > 0){
+		if( month == 1 && day <= year_offset ){
+			week.year = year-1;
+			if(is_leap_year(week.year)) week.offset = 53;
+			else week.offset = 52;
+			return week;
+		}
+	}
+	/*
+	else {
+		if( month == 12 && day > (31+year_offset)){
+			week.year = year+1;
+			week.offset = 1;
+			return week;
+		}
+	}
+	*/
+
+	week.year = year;
+	week.offset = ((days/7) - ((jan1 + year_offset)/7)) + 1;
+
+	return week;
+}
+
+
+
 //For every 4 years, add 3 years
+
+void display_calendar_month(int year, int month)
+{
+	struct apx_date_s *date;
+	struct apx_calendar_month_s data = {0};
+
+	//apx_week_from_date(year, month, 1);
+
+	date = &data.date[0][0];
+
+	for(int i = 0; i < 5; i++){
+		//for(int ii = 0; ii < 7= 	
+	}
+	printf("date: %u-%u-%u\n", date->year, date->month, date->day);
+}
 
 
 // test dates
@@ -994,66 +989,61 @@ void test_win()
 	NTSTATUS r = 0xffff;
 	LARGE_INTEGER t = {0};
 	TIME_FIELDS f = {0};
-	struct datetime_fields dt;
+	apx_datetime dt;
 
-	f.Year = 1601;
-	f.Month = 2;
-	f.Day = 28;
+
+	f.Year     = 2020;
+	f.Month    = 10;
+	f.Day      = 24;
+	f.Hour     = 5;
+	f.Minute   = 10;
+	f.Second   = 25;
 
 	ntdll.RtlTimeFieldsToTime(&f, &t);
 
-	//122238720000000000
-	t.QuadPart += 5748192000000000;
+	dt = apx_timestamp_in(apx_timestamp_winnt, t.QuadPart);  
+	printf("date: %u | %u | %u\n", dt->year, dt->month, dt->day);
 
-	printf("Time: %llu\n", t.QuadPart);
 
-	printf("num_leap_years: %u\n", num_leap_years_from_year(f.Year));
+	apx_time64 time;
+	time = apx_timestamp_out(dt, apx_timestamp_unix_time_msec);
+	printf("timestamp: %llu\n", time);
 
-	from_timestamp(&dt, t.QuadPart);
-}
+	/*
+	f.Year = 0; f.Month = 0; f.Day = 0;
+	ntdll.RtlTimeToTimeFields(&t, &f);
+	printf("windate: %u | %u | %u\n", f.Year, f.Month, f.Day);
+	*/
 
-void to_timestamp(apx_datetime *dt, systime *st)
-{
+
+	struct apx_week_s week = apx_week_from_date(2021, 1, 1);
+	printf("week: %u-W%u\n", week.year, week.offset);
+
+
+	dt = apx_timestamp_in(apx_timestamp_winnt, 132274826720005701);
+	printf("Year: %u | Month: %u | Day: %u | Hour: %u | Minute: %u | Second: %u | Milli: %u | Micro: %u | Nano: %u | Tz: %u | DOW: %u\n",
+		dt->year, dt->month, dt->day, dt->hour, dt->min, dt->sec, dt->ms,
+		dt->us, dt->nano, dt->tz, dt->dow);
 
 }
 
 
 // Parse and compute the binary representation of a formatted time string
-int apx_format_read(APX_DATETIME *dt,
-	const char *format, const char *date, int size)
+apx_datetime apx_format_read( _in_ const char *format,
+	_in_ const char *date, _in_ int size)
 {
-	struct datetime_fields *fields = (struct datetime_fields*)dt;
+	apx_datetime dt;
 	struct date_parser parser;
 	const char *ptr;
-	systime *st;
 
+	dt = alloc_datetime();
 	parser.format = format;
 	parser.date = date;
 
-	if((enum apx_format)format < apx_format_max){
-
-		switch((enum apx_format)format){
-		case apx_format_iso_8601:
-			parser.format = "%Y-%m-%dT%H:%i:%s%U";
-			break;
-
-		case apx_format_http_cookie:
-			parser.format = "%D, %d %M %Y %H:%i:%s GMT";
-			break;
-
-		// format is a 64 bit Windows FileTime struct
-		case apx_format_winnt:
-			st = (systime*)format;
-
-		}
-	}
-	else {
-	}
-
 	tokenizer_reader(&parser.tokenizer, date, parser.format, dt);
-	printf("Year: %d | Tz: %d\n", fields->year, fields->tz);
+	printf("Year: %d | Tz: %d\n", dt->year, dt->tz);
 
-	return 0;
+	return dt;
 }
 
 #define GREGORIAN_EPOCH_TO_UNIX_EPOCH_DAYS    141427
@@ -1066,140 +1056,156 @@ int apx_format_read(APX_DATETIME *dt,
 #define GREGORIAN_EPOCH_TO_UNIX_EPOCH_NANOSEC 12219292800000000000
 
 
-int apx_format_write(apx_datetime *adt,
-	void *buf, unsigned bufsz, const char *format)
+int apx_format_write( _in_ apx_datetime dt,
+	_in_ const char *format,
+	_out_ void *buf, _in_ unsigned bufsz)
 {
 	int n;
 	struct date_parser parser;
 	const char *str = 0;
 	enum DateFormat constant;
-	struct datetime_fields *f = (struct datetime_fields*)dt;
-
 	struct tokenizer tokenizer;
 
-	if((enum apx_format)format < apx_format_max){
-		printf("Printing pre-defined format...\n");
-		constant = (enum apx_format)format;
-		switch(constant)
-		{
-		case apx_format_iso_8601:
-			format = "%Y-%m-%dT%H:%i%s%U";
-			break;
-
-		case apx_format_http_cookie:
-			format = "%D, %d %M %Y %H:%i:%s GMT";
-			break;
-
-		case apx_format_winnt:
-			// convert the systime to a datetime struct
-			break;
-		}
-	}
-	else {
-		printf("Printing custom format...\n");
-		str = format;
-
-		/*
-		switch(c){
-		case 'd':
-		}
-		*/
-	}
+	str = format;
 
 	test_win();
 
 	tokenizer_writer(&tokenizer, buf, format, dt);
-	return 0;
+
+	return apx_error_none;
 }
 
-int apx_timestamp_write(apx_datetime *adt,
-	_in_ enum apx_timestamp type, _out_ apx_timestamp *ts)
+//nano * 1.0e-4
+apx_uint64 apx_timestamp_out
+( _in_ apx_datetime dt, _in_ enum apx_timestamp type)
 {
+	apx_uint64 timestamp;
+
+	assert(dt);
+
+	timestamp = apx_datetime_to_timestamp(dt);
+
 	switch(type){
-	case apx_timestamp_winnt:	
-		winnt_timestamp(adt);
+	case apx_timestamp_winnt:
+		timestamp -= 5748192000000000;
 		break;
 
 	case apx_timestamp_unix_time_sec:
+		timestamp = (timestamp - 122192928000000000) / 10000000;
 		break;
 
 	case apx_timestamp_unix_time_msec:
+		timestamp = (timestamp - 122192928000000000) / 10000;
+		break;
+	}
+
+	return timestamp;
+}
+
+
+apx_datetime apx_timestamp_in
+( _in_ enum apx_timestamp type, _in_ apx_uint64 time)
+{
+	apx_datetime dt;
+
+	dt = alloc_datetime();
+	switch(type){
+	case apx_timestamp_winnt:
+		time += 5748192000000000;
 		break;
 
+	case apx_timestamp_unix_time_sec:
+		time = (time * 10000000) + 122192928000000000;
+		break;
+
+	case apx_timestamp_unix_time_msec:
+		time = (time * 10000) + 122192928000000000;
+		break;
 	}
+
+	apx_timestamp_to_datetime(dt, time);
+
+	return dt;
 }
 
-
-int apx_timestamp_read()
+void apx_get_calendar_month(int year, int month, struct apx_calendar_month_s *data)
 {
-}
+/*
+ * calculate the day of the week the month starts on
+ * if the dow is not on sunday, determine how many days from previous month to get
+ *	 subtract the dow from sunday, thats the number of days from prev month
+*/
+	char dom_table[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+	int days;
+	int dow;
+	int current_day;
+	int i;
+	int prev_month;
+	int week = 0;
+	char start_dow;
 
+	days = num_epoch_days(year, month, 1);
+	start_dow = weekday_from_days(days);
 
-int unixtime_to_systime_ms(__time64_t timestamp, struct datetime_fields *f)
-{
-	__int64 n;
-	__int64 days;
-	short val;
+	prev_month = month == 1 ? 12 : month-1;
+	current_day = dom_table[prev_month] - start_dow;
 
-	char dow[] = { 3, 4, 5, 6, 0, 1, 2 }; //unix epoch is on a Thursday so we must normalize the weekday
-
-	f->ms = timestamp % MS_PER_SECOND;
-
-	n = timestamp / MS_PER_SECOND; //seconds since epoch
-	f->sec = n % SEC_PER_MINUTE;
-
-	n /= SEC_PER_MINUTE; //minutes since epoch
-	f->min = n % MIN_PER_HOUR;
-
-	n /= MIN_PER_HOUR; //hours since epoch
-	f->hour = n % HOUR_PER_DAY;
-
-	n /= HOUR_PER_DAY; //days since epoch
-	days = (n % DAYS_PER_YEAR) - (n / 1460) + 1;
-
-	//f->dow = day_of_week(n, dow);
-
-	n /= DAYS_PER_YEAR; //years since epoch
-	val = 1970 + (short)n;
-	f->year = (WORD)val;
-
-	val = get_date_from_days((int)days, val);
-	if (!val) return 0;
-	f->month = (val >> 8) + 1; //windows systemtime starts at 1
-	f->day = 0x1f & val;
-
-	return 1;
-}
-
-BOOL systime_to_unixtime_ms(SYSTEMTIME *systime, __time64_t *timestamp)
-{
-	__time64_t ts = 0;
-	short days;
-
-	ts += (systime->wYear - 1970) * MS_PER_YEAR;
-	days = num_year_days(systime->wMonth-1, systime->wDay, systime->wYear);
-	ts += days * MS_PER_DAY;
-	ts += systime->wHour * MS_PER_HOUR;
-	ts += systime->wMinute * MS_PER_MINUTE;
-	ts += systime->wSecond * MS_PER_SECOND;
-	ts += systime->wMilliseconds;
-	*timestamp = ts;
 	
-	return TRUE;
+	//populate the previous month days
+	for(dow = 0; dow < start_dow; dow++)
+	{
+		data->date[dow][week].month = prev_month;
+		data->date[dow][week].day = current_day++;
+		data->date[dow][week].year = prev_month == 12 ? year-1 : year;
+		current_day++;
+	}
+	current_day = 1;
+
+	// fill up the rest of week 1
+	while(dow < 7)
+	{
+		data->date[dow][week].month = month;
+		data->date[dow][week].day = current_day++;
+		data->date[dow][week].year = year;
+		dow++;
+	}
+	week++;
+
+	/*
+	while(week < 5)
+	{
+		for(dow = 0; dow < 7; dow++)
+		{
+			data->date[dow][week].month = month;
+			data->date[dow][week].day = current_day++;
+			data->date[dow][week].year = year;	
+		}
+		week++;
+	}
+	*/
 }
 
-int test_time()
-{
-	__time64_t ts = 1600303652534;
 
-	SYSTEMTIME st;
-	st.wYear = 2020;
-	st.wMonth = 9;
-	st.wDayOfWeek = 3;
-	st.wDay = 17;
-	st.wHour = 0;
-	st.wMinute = 47;
-	st.wSecond = 32;
-	st.wMilliseconds = 0;
-	return 1;
+apx_datetime apx_local_now()
+{
+	apx_datetime dt = alloc_datetime();
+	local_now(dt);
+	return dt;
+}
+
+apx_datetime apx_utc_now()
+{
+	apx_datetime dt = alloc_datetime();
+	utc_now(dt);
+	return dt;
+}
+
+inline apx_datetime alloc_datetime()
+{
+	return malloc(16);
+}
+
+inline void free_datetime(apx_datetime dt)
+{
+	free(dt);
 }
